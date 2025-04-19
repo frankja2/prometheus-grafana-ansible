@@ -41,5 +41,4 @@
 - name: Start monitoring stack
   community.docker.docker_compose_v2:
     project_src: /opt/monitoring
-    state: restarted
 
