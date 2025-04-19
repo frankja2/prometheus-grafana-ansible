@@ -1,0 +1,6 @@
+- name: Setup full monitoring stack
+  hosts: monitoring
+  become: true
+
+  roles:
+    - monitoring

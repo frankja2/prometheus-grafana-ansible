@@ -1,0 +1,44 @@
+- name: Create monitoring directory
+  file:
+    path: /opt/monitoring
+    state: directory
+    mode: '0755'
+
+- name: Deploy docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/monitoring/docker-compose.yml
+
+- name: Create Grafana provisioning folders
+  file:
+    path: "/opt/monitoring/grafana/provisioning/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - datasources
+    - dashboards
+
+- name: Deploy Prometheus config
+  template:
+    src: prometheus.yml.j2
+    dest: /opt/monitoring/prometheus.yml
+
+- name: Deploy Grafana datasource config
+  template:
+    src: grafana-datasource.yml.j2
+    dest: /opt/monitoring/grafana/provisioning/datasources/datasource.yml
+
+- name: Deploy Grafana dashboard provisioning config
+  template:
+    src: grafana-dashboard.yml.j2
+    dest: /opt/monitoring/grafana/provisioning/dashboards/dashboard.yml
+
+- name: Deploy HTTP metrics dashboard
+  template:
+    src: http-metrics-dashboard.json.j2
+    dest: /opt/monitoring/grafana/provisioning/dashboards/http-metrics-dashboard.json
+
+- name: Start monitoring stack
+  community.docker.docker_compose:
+    project_src: /opt/monitoring
+

@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'nodejs-demoapp'
+    static_configs:
+      - targets: ['{{ app_metrics_endpoint }}']
