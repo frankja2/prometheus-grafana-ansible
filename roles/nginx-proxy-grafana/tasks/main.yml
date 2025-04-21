@@ -20,7 +20,7 @@
 
 - name: Create nginx config for Grafana (HTTP -> HTTPS redirect + HTTPS handling)
   template:
-    src: grafana_nginx.conf.j2
+    src: grafana_proxy.conf.j2
     dest: /etc/nginx/sites-available/{{ grafana_domain }}
 
 - name: Enable nginx config
