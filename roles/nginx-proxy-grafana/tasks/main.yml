@@ -1,42 +1,46 @@
-- name: Install nginx
-  ansible.builtin.apt:
+- name: Ensure nginx is installed
+  apt:
     name: nginx
     state: present
     update_cache: yes
 
-- name: Install certbot and nginx plugin
-  ansible.builtin.apt:
-    name:
-      - certbot
-      - python3-certbot-nginx
+- name: Ensure certbot is installed
+  apt:
+    name: certbot
     state: present
+    update_cache: yes
 
-- name: Create nginx config for Grafana
-  ansible.builtin.template:
-    src: grafana_proxy.conf.j2
-    dest: /etc/nginx/sites-available/grafana
-    owner: root
-    group: root
-    mode: '0644'
+- name: Ensure directory for Let's Encrypt challenges exists
+  file:
+    path: /var/www/html
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
 
-- name: Enable Grafana site
-  ansible.builtin.file:
-    src: /etc/nginx/sites-available/grafana
-    dest: /etc/nginx/sites-enabled/grafana
+- name: Create nginx config for Grafana (HTTP -> HTTPS redirect + HTTPS handling)
+  template:
+    src: grafana_nginx.conf.j2
+    dest: /etc/nginx/sites-available/{{ grafana_domain }}
+
+- name: Enable nginx config
+  file:
+    src: /etc/nginx/sites-available/{{ grafana_domain }}
+    dest: /etc/nginx/sites-enabled/{{ grafana_domain }}
     state: link
-
-- name: Remove default site
-  ansible.builtin.file:
-    path: /etc/nginx/sites-enabled/default
-    state: absent
+    force: yes
 
 - name: Reload nginx
-  ansible.builtin.systemd:
+  systemd:
     name: nginx
     state: reloaded
 
-- name: Obtain SSL cert via certbot
-  ansible.builtin.command:
-    cmd: "certbot --nginx --non-interactive --agree-tos --email {{ certbot_email }} -d {{ grafana_domain }}"
+- name: Obtain Let's Encrypt cert for Grafana
+  command: certbot certonly --webroot -w /var/www/html -d {{ grafana_domain }} --noninteractive --agree-tos --register-unsafely-without-email
   args:
-    creates: "/etc/letsencrypt/live/{{ grafana_domain }}"
+    creates: "/etc/letsencrypt/live/{{ grafana_domain }}/fullchain.pem"
+
+- name: Reload nginx again (after getting cert)
+  systemd:
+    name: nginx
+    state: reloaded
